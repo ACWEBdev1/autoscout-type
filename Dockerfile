@@ -30,8 +30,15 @@ WORKDIR /scout
 COPY scout_automation.py /scout/scout_automation.py
 RUN chmod +x /scout/scout_automation.py
 
-# 7. n8nを動かす標準の「node」ユーザーに切り替え（セキュリティのため）
-USER node
+# 7. ボリュームマウント時の権限エラー（EACCES）を回避するためのツール(gosu)をインストール
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 
-# 8. n8nを起動するコマンド
-CMD ["n8n"]
+# 8. 起動スクリプトを作成（起動時にボリュームの権限をnodeユーザーに書き換えてからn8nを起動）
+RUN echo '#!/bin/bash\n\
+mkdir -p /home/node/.n8n\n\
+chown -R node:node /home/node/.n8n\n\
+exec gosu node n8n\n\
+' > /start.sh && chmod +x /start.sh
+
+# 9. コンテナ起動時にスクリプトを実行
+CMD ["/start.sh"]
