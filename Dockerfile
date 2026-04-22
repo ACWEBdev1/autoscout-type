@@ -1,14 +1,9 @@
-FROM n8nio/n8n:latest-debian
+# 1. 非常に新しく安定している「Node.js 20 (Debian 12 Bookworm)」をベースにします
+FROM node:20-bookworm
 
 USER root
 
-# Debian 10 (Buster) のサポート終了に伴う404エラーを回避するため、リポジトリ参照先をarchiveに変更
-RUN sed -i s/deb.debian.org/archive.debian.org/g /etc/apt/sources.list && \
-    sed -i s/security.debian.org/archive.debian.org/g /etc/apt/sources.list && \
-    sed -i '/buster-updates/d' /etc/apt/sources.list && \
-    echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/99no-check-valid-until
-
-# 1. Python環境とPlaywrightの依存パッケージ、およびbase64（coreutils）をインストール
+# 2. Python3と必要なシステムツールをインストール（Debian 12なので最新のaptが動きます）
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -17,18 +12,26 @@ RUN apt-get update && apt-get install -y \
     coreutils \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Playwrightとrequestsをシステムにインストール
-RUN pip3 install --no-cache-dir playwright requests
+# 3. Pythonのパッケージ（Playwright, Requests）をインストール
+# Debian 12では --break-system-packages が必須になります
+RUN pip3 install --no-cache-dir --break-system-packages playwright requests
 
-# 3. Playwright用ブラウザ（Chromium）とそのOSレベルの依存関係をインストール
+# 4. Playwrightのブラウザ（Chromium）と、それに必要なOSの依存パッケージをインストール
+# （古いDebian 10ではここで失敗していましたが、Debian 12なら完璧に成功します）
 RUN playwright install chromium \
     && playwright install-deps chromium
 
-# 4. 実行用スクリプトをコンテナ内へコピーできるようにディレクトリを作成
-# （GitHubからデプロイする際、同じ階層にある scout_automation.py がコピーされます）
+# 5. n8n本体を最新のnpm経由でシステムに直接インストールします
+# （古いn8nのベースイメージに頼るのをやめ、自前で最新版のn8nを用意します）
+RUN npm install -g n8n
+
+# 6. 実行用スクリプトをコピー
 WORKDIR /scout
 COPY scout_automation.py /scout/scout_automation.py
 RUN chmod +x /scout/scout_automation.py
 
-# 権限をn8nを動かす標準のnodeユーザーに戻す
+# 7. n8nを動かす標準の「node」ユーザーに切り替え（セキュリティのため）
 USER node
+
+# 8. n8nを起動するコマンド
+CMD ["n8n"]
