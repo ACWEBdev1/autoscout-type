@@ -2,6 +2,12 @@ FROM n8nio/n8n:latest-debian
 
 USER root
 
+# Debian 10 (Buster) のサポート終了に伴う404エラーを回避するため、リポジトリ参照先をarchiveに変更
+RUN sed -i s/deb.debian.org/archive.debian.org/g /etc/apt/sources.list && \
+    sed -i s/security.debian.org/archive.debian.org/g /etc/apt/sources.list && \
+    sed -i '/buster-updates/d' /etc/apt/sources.list && \
+    echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/99no-check-valid-until
+
 # 1. Python環境とPlaywrightの依存パッケージ、およびbase64（coreutils）をインストール
 RUN apt-get update && apt-get install -y \
     python3 \
