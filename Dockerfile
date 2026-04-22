@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y \
     coreutils \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. pipの警告（Break System Packages）を回避してPlaywrightとrequestsをシステムにインストール
-RUN pip3 install --no-cache-dir --break-system-packages playwright requests
+# 2. Playwrightとrequestsをシステムにインストール
+RUN pip3 install --no-cache-dir playwright requests
 
 # 3. Playwright用ブラウザ（Chromium）とそのOSレベルの依存関係をインストール
 RUN playwright install chromium \
