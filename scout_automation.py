@@ -86,7 +86,11 @@ def main():
     
     # 必須パラメータチェック
     if not TYPE_JOB_ID or not TYPE_CONDITION_NAME:
-        return {"status": "error", "message": "TYPE_JOB_ID または TYPE_CONDITION_NAME が設定されていません。", "results": []}
+        return {
+            "status": "error", 
+            "message": f"TYPE_JOB_ID または TYPE_CONDITION_NAME が設定されていません。現在の値: JOB_ID='{TYPE_JOB_ID}', CONDITION='{TYPE_CONDITION_NAME}'", 
+            "results": []
+        }
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -114,9 +118,9 @@ def main():
             random_sleep(4, 6)
 
             # === 3. 対象の求人IDブロックを探し「保存した検索条件」をクリック ===
-            # クラス名が画像にある boss-scoutlike-item-list-wrap と想定
-            job_block = page.locator(f'.boss-admin-container, div:has-text("{TYPE_JOB_ID}")').filter(has_text=TYPE_JOB_ID).first
-            job_block.locator('span:has-text("保存した検索条件"), a:has-text("保存した検索条件"), button:has-text("保存した検索条件")').first.click()
+            # スクリーンショットに合わせて、正確なクラス名と属性（data-test）に修正しました
+            job_block = page.locator('.boss-scoutlike-item').filter(has=page.locator(f'h2:has-text("{TYPE_JOB_ID}")')).first
+            job_block.locator('[data-test="search-save-condition-link"]').first.click()
             page.wait_for_load_state("networkidle")
             random_sleep(3, 5)
 
